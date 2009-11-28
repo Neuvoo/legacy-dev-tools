@@ -1,0 +1,8 @@
+#!/bin/bash
+
+EBUILD=`echo $1 | awk -F/ '{print $2}'`
+echo "Unmasking: $1"
+echo "$1 **" >> $SYSROOT/etc/portage/package.keywords/$EBUILD
+echo "$1" >> $SYSROOT/etc/portage/package.unmask/$EBUILD
+echo "$1 **" >> /etc/portage/package.keywords/$EBUILD
+echo "$1" >> /etc/portage/package.unmask/$EBUILD

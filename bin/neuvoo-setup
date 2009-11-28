@@ -1,0 +1,70 @@
+# Created under GPLv3 for the Neuvoo toolkit by Jacob "viridior" Galbreath <jacobgalbreath@gmail.com>
+# 11/28/2009 1936
+
+#check if necessary files are present
+if [ ! -e ../build/stage3* ]
+then 
+  echo "Please put a stage3 gentoo tarball compatible with your computer in the ${PWD}/build/ directory.  You can find available stage3's here: http://www.gentoo.org/main/en/mirrors2.xml -> releases/{arch}/autobuilds/{date}/stage3-{arch}-{date}.tar.bz2"
+  exit 1
+else
+  read -p "Enter complete name of stage3 to use: " NV_TARBALL
+fi
+
+#!/bin/bash
+read -p "Name of target env [\$NV]? " NV
+
+#create directory path
+NV_INSTALL="/opt/${NV}"
+
+if [ -d $NV_INSTALL ]
+then
+  echo "Found: ${NV_INSTALL} (overwriting)"
+else
+  echo "Creating: ${NV_INSTALL}"
+  mkdir -p $NV_INSTALL
+fi
+
+#unpack image
+echo "Unpacking: ${NV_TARBALL}"
+tar -xjpf $PWD/../build/$NV_TARBALL -C $NV_INSTALL
+
+#create and add /bin/neuvoo-shell
+NV_BUILD="neuvoo-shell"
+echo "Creating: /bin/${NV_BUILD}"
+echo "#!/bin/bash" > /bin/$NV_BUILD
+echo "chroot ${NV_INSTALL} /bin/neuvoo-chroot-shell" >> /bin/$NV_BUILD
+chmod 700 /bin/$NV_BUILD
+echo "Adding: /bin/${NV_BUILD}"
+echo "/bin/${NV_BUILD}" >> /etc/shells
+
+#create /bin/neuvoo-mount
+NV_BUILD="neuvoo-mount"
+echo "Creating: /bin/${NV_BUILD}"
+echo "#!/bin/bash" > /bin/$NV_BUILD
+echo "mount -t proc none ${NV_INSTALL}/proc" >> /bin/$NV_BUILD
+echo "mount -o bind /dev ${NV_INSTALL}/dev" >> /bin/$NV_BUILD
+chmod 700 /bin/$NV_BUILD
+
+#copy env files to chroot env
+echo "Copying: env/*"
+cp -Rp $PWD/../env/* $NV_INSTALL
+
+#edit $NV_INSTALL/etc/bash/bashrc
+NV_BUILD=$NV_INSTALL/etc/bash/bashrc
+echo "Editing: ${NV_BUILD}"
+echo "#Neuvoo Environment Variables" >> $NV_BUILD
+echo "export NV=\"/build/${NV}\"" >> $NV_BUILD
+echo "export PS1=\"(neuvoo) \$PS1\"" >> $NV_BUILD
+
+#edit $NV_INSTALL/etc/make.conf
+NV_BUILD=$NV_INSTALL/etc/make.conf
+echo "Editing: ${NV_BUILD}"
+echo "PORTDIR_OVERLAY=\"/usr/local/portage\"" >> $NV_BUILD
+
+#create $NV_INSTALL/usr/local/portage
+NV_BUILD=$NV_INSTALL/usr/local/portage
+echo "Creating: ${NV_BUILD}"
+mkdir -p $NV_BUILD
+
+#follow-on instructions
+echo "Read the HOWTO or visit http://neuvoo.org/wiki/ to get started."

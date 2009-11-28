@@ -1,0 +1,54 @@
+This is a very simple instruction guide, please visit http://neuvoo.org/wiki/ for detailed examples and troubleshooting.
+
+[Mounts]
+Don't forget to execute /bin/neuvoo-mount prior to entering the environment.
+You can add additional mounts as required by editing /bin/neuvoo-mount
+
+[Entering Environment]
+To Enter your chrooted neuvoo simply run (root) "neuvoo-shell" or (sudo) "sudo /bin/neuvoo-shell"
+
+[Initial Tasks]
+  <Portage>
+  Once you are in the chroot env you will need to download a portage tree from...
+  http://www.gentoo.org/main/en/mirrors2.xml -> snapshots -> portage-{date}.tar.bz2
+  Then,
+  $tar -xvjpf portage-{date}.tar.bz2 -C /usr
+
+  <Crossdev>
+  Execute the following in your chroot env...
+  (example) $ACCEPT_KEYWORDS="~x86" emerge crossdev crossdev-wrappers
+  When complete, build your desired toolchain.
+  (example) $crossdev -t armv7a-softfloat-linux-gnueabi
+  (example) $crossdev -S -P -v -t armv7a-softfloat-linux-gnueabi
+  (example) $crossdev --binutils 2.20.51.0.2 --gcc 4.4.2 --k 2.6.30-r1 --libc 2.10.1-r1 -t armv7a-softfloat-linux-gnueabi
+  When finished, run the following...
+  $emerge-wrapper --init
+
+  <Configs>
+  * Host Env
+  Edit /etc/make.conf as you normally would.
+
+  * Crossdev Env
+  Edit /usr/{cross_toolchain}/etc/make.conf
+  (example) nano /usr/armv7a-softfloat-linux-gnueabi/etc/make.conf
+  Don't forget to set your profile for your crossdev env
+  $ln -s /usr/portage/profiles/path/to/desired/profile /usr/{cross_toolchain}/etc/make.profile
+
+[Building Your Image]
+
+  <Compiling>
+  (example) $emerge-armv7a-softfloat-linux-gnueabi -DNuavb <package>
+  (example) $ACCEPT_KEYWORDS=\"**\" emerge-armv7a-softfloat-linux-gnueabi -avK <package>
+
+  <Making Image>
+  I've found it better to compile packages first by default to /usr/{cross_toolchain} and then
+  install the binaries to a separate image location, defaulted to /build/$NV in your chrooted env.
+  (example) $neuvoo-image-emerge -DNuavK system
+
+  You can install indiviual packages with our simple script
+  (example) $neuvoo-image-emerge -DNuavK <package>
+
+  <Packaging>
+  For a Gentoo-style system image...
+  (example) $tar -cvjpf /build/my_image.tar.bz2 $NV
+
