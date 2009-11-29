@@ -1,6 +1,9 @@
 # Created under GPLv3 for the Neuvoo toolkit by Jacob "viridior" Galbreath <jacobgalbreath@gmail.com>
 # 11/28/2009 1936
 
+#set up link path
+NV_LINK="/opt/neuvoo"
+
 #check if necessary files are present
 if [ ! -e ../build/stage3* ]
 then 
@@ -16,55 +19,74 @@ read -p "Name of target env [\$NV]? " NV
 #create directory path
 NV_INSTALL="/opt/${NV}"
 
-if [ -d $NV_INSTALL ]
+if [ -d "${NV_INSTALL}" ]
 then
   echo "Found: ${NV_INSTALL} (overwriting)"
 else
   echo "Creating: ${NV_INSTALL}"
-  mkdir -p $NV_INSTALL
+  mkdir -p "${NV_INSTALL}" || die "Could not make directory: ${NV_INSTALL}, check permissions."
 fi
+
+#create link to $NV_INSTALL
+ln -s "${NV_INSTALL}" "${NV_LINK}" || die "Could not create link: ${NV_LINK}, check permissions."
 
 #unpack image
 echo "Unpacking: ${NV_TARBALL}"
-tar -xjpf $PWD/../build/$NV_TARBALL -C $NV_INSTALL
+tar -xjpf $PWD/../build/"${NV_TARBALL}" -C "${NV_INSTALL}" || die "Failed to unpack tarball: ${NV_TARBALL}, is it in a proper tar/bz2 format?"
 
 #create and add /bin/neuvoo-shell
-NV_BUILD="neuvoo-shell"
-echo "Creating: /bin/${NV_BUILD}"
-echo "#!/bin/bash" > /bin/$NV_BUILD
-echo "chroot ${NV_INSTALL} /bin/neuvoo-chroot-shell" >> /bin/$NV_BUILD
-chmod 700 /bin/$NV_BUILD
-echo "Adding: /bin/${NV_BUILD}"
-echo "/bin/${NV_BUILD}" >> /etc/shells
+NV_BUILD="/bin/neuvoo-shell"
+if [ -f "${NV_BUILD}" ]
+then
+  echo "Exists: ${NV_BUILD}, skipping"
+else
+  echo "Creating: ${NV_BUILD}"
+  echo "#!/bin/bash" > "${NV_BUILD}" || die "Failed to create: ${NV_BUILD}, check permissions."
+  echo "chroot ${NV_LINK} /bin/neuvoo-chroot-shell" >> "${NV_BUILD}"
+  chmod 700 "${NV_BUILD}" || die "Failed to chmod: ${NV_BUILD}, check permissions."
+  echo "Adding: ${NV_BUILD}"
+  echo "${NV_BUILD}" >> /etc/shells || die "Failed to write to: /bin/shells, check permissions."
+fi
 
 #create /bin/neuvoo-mount
-NV_BUILD="neuvoo-mount"
-echo "Creating: /bin/${NV_BUILD}"
-echo "#!/bin/bash" > /bin/$NV_BUILD
-echo "mount -t proc none ${NV_INSTALL}/proc" >> /bin/$NV_BUILD
-echo "mount -o bind /dev ${NV_INSTALL}/dev" >> /bin/$NV_BUILD
-chmod 700 /bin/$NV_BUILD
+NV_BUILD="/bin/neuvoo-mount"
+if [ -f "${NV_BUILD}" ]
+then
+  echo "Exists: ${NV_BUILD}, skipping"
+else
+  echo "Creating: ${NV_BUILD}"
+  echo "#!/bin/bash" > "${NV_BUILD}" || die "Failed to create: ${NV_BUILD}, check permissions."
+  echo "mount -t proc none ${NV_LINK}/proc" >> "${NV_BUILD}"
+  echo "mount -o bind /dev ${NV_LINK}/dev" >> "${NV_BUILD}"
+  chmod 700 "${NV_BUILD}" || die "Failed to chmod: ${NV_BUILD}, check permissions."
+fi
 
 #copy env files to chroot env
 echo "Copying: env/*"
-cp -Rp $PWD/../env/* $NV_INSTALL
+cp -Rp $PWD/../env/* "${NV_INSTALL}" || die "Failed to copy: ${PWD}/../env/* to ${NV_INSTALL}, check permissions."
 
 #edit $NV_INSTALL/etc/bash/bashrc
-NV_BUILD=$NV_INSTALL/etc/bash/bashrc
+NV_BUILD="${NV_INSTALL}/etc/bash/bashrc"
 echo "Editing: ${NV_BUILD}"
-echo "#Neuvoo Environment Variables" >> $NV_BUILD
-echo "export NV=\"/build/${NV}\"" >> $NV_BUILD
-echo "export PS1=\"(neuvoo) \$PS1\"" >> $NV_BUILD
+echo "#Neuvoo Environment Variables" >> "${NV_BUILD}"  || die "Failed to create: ${NV_BUILD}, check permissions."
+echo "export NV=\"/build/${NV}\"" >> "${NV_BUILD}"
+echo "export PS1=\"(neuvoo) \$PS1\"" >> "${NV_BUILD}"
 
 #edit $NV_INSTALL/etc/make.conf
-NV_BUILD=$NV_INSTALL/etc/make.conf
+NV_BUILD="${NV_INSTALL}/etc/make.conf"
 echo "Editing: ${NV_BUILD}"
-echo "PORTDIR_OVERLAY=\"/usr/local/portage\"" >> $NV_BUILD
+echo "PORTDIR_OVERLAY=\"/usr/local/portage\"" >> "${NV_BUILD}" || die "Failed to create: ${NV_BUILD}, check permissions."
 
 #create $NV_INSTALL/usr/local/portage
-NV_BUILD=$NV_INSTALL/usr/local/portage
+NV_BUILD="${NV_INSTALL}/usr/local/portage"
 echo "Creating: ${NV_BUILD}"
-mkdir -p $NV_BUILD
+mkdir -p "${NV_BUILD}" || die "Failed to create: ${NV_BUILD}, check permissions."
 
 #follow-on instructions
+echo "---- First Run ----"
 echo "Read the HOWTO or visit http://neuvoo.org/wiki/ to get started."
+echo "Edit /bin/neuvoo-mount and map more mounts to ${NV_LINK} as needed."
+echo "---- Multiple Environments ----"
+echo "To create multiple crossdev environments, simply rerun the script."
+echo "relink /opt/neuvoo to your desired env or create multiple /bin/neuvoo-shell"
+echo "scripts to reference each environment."
