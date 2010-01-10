@@ -1,6 +1,9 @@
 # Created under GPLv3 for the Neuvoo toolkit by Jacob "viridior" Galbreath <jacobgalbreath@gmail.com>
 # 11/28/2009 1936
 
+# Sets up and configures a cross-compile environment based on a stage3.
+# Summarizes the first few pages of the "Hand-craft an Image" HOWTO.
+
 #set up link path
 NV_LINK="/opt/neuvoo"
 
