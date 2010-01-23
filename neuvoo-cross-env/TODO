@@ -1,0 +1,4 @@
+1. grep check for /etc/shells to prevent multiple references to /bin/neuvoo-shell
+2. ncurses select of tarballs in build/
+3. add 'firstrun' in chroot env for command to be executed for install of portage, crossdev, etc
+

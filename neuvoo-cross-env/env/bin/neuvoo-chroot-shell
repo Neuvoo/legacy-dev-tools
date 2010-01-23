@@ -1,0 +1,4 @@
+#!/bin/bash
+echo "Establishing Neuvoo Chrooted Environment..."
+env-update && source /etc/profile
+exec bash

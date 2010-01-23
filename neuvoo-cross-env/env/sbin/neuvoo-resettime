@@ -1,0 +1,2 @@
+#!/bin/sh
+find $NV/ -exec touch -t 199912310001 \{\} \;

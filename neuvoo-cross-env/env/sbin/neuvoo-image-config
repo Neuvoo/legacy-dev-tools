@@ -1,0 +1,97 @@
+#!/bin/bash
+
+if [[ "${ROOT}" == "" ]]; then
+	echo "You must set ROOT to your base image directory."
+	echo "i.e. ROOT=/path/to/base/image/ neuvoo-image-config"
+	exit
+fi
+
+echo "ROOT: $ROOT"
+
+### Check for critical devices
+#$ROOT/dev/null
+if [ -e $ROOT/dev/null ]; then
+	echo "Skipped ${ROOT}/dev/null"
+else
+	mknod -m 777 $ROOT/dev/null c 1 3 
+	echo "Created ${ROOT}/dev/null"
+fi
+
+#$ROOT/dev/null
+if [ -e $ROOT/dev/console ]; then
+        echo "Skipped ${ROOT}/dev/console"
+else
+        mknod -m 600 $ROOT/dev/console c 5 1 
+        echo "Created ${ROOT}/dev/console"
+fi
+
+### Check for systems
+case ${1} in
+	beagle)
+		TTY="ttyS2"
+		;;
+	pandora)
+		TTY="ttyS2"
+		;;
+	touchbook)
+		TTY="ttyS2"
+		;;
+	overo)
+		TTY="ttyS2"
+		;;
+	devkit)
+		TTY="ttyS2"
+		;;
+esac
+
+###make TTY device
+#$ROOT/dev/$TTY
+if [ -e $ROOT/dev/$TTY ]; then
+        echo "Skipped ${ROOT}/dev/$TTY"
+else
+        mknod -m 600 $ROOT/dev/console c 5 1
+	        echo "Created ${ROOT}/dev/console"
+fi
+
+### Update configs
+#$ROOT/etc/securetty
+RET_TTY=`grep $TTY $ROOT/etc/securetty`
+if [[ $RET_TTY == "" ]]; then
+	echo "Skipping $ROOT/etc/securetty"
+else
+	echo $TTY >> $ROOT/etc/securetty
+	echo "Added $TTY to $ROOT/etc/securetty"
+fi
+
+### Make swap
+# -add question for swap size
+dd if=/dev/zero of=$ROOT/swapfile bs=1024 count=4096
+mkswap -L SWAP $ROOT/swapfile
+
+### $ROOT/etc/fstab
+# -parse $ROOT/etc/fstab and set /dev/ROOT, /dev/SWAP
+
+### $ROOT/etc/inittab
+# - parse $ROOT/etc/inittab and set s2
+
+### add rc-scripts
+# - add metalog vixie-cron
+cd $ROOT/etc/runlevels/boot
+echo "Adding vixie-cron to init scripts"
+ln -s ../../init.d/vixie-cron
+echo "Adding metalog to init scripts"
+ln -s ../../init.d/metalog
+cd $OLDPWD
+
+### set root password
+
+### set hostname
+
+### set initial networking config
+
+### make default directories
+mkdir $ROOT/proc
+chmod 555 $ROOT/proc
+mkdir $ROOT/sys
+chmod 755 $ROOT/sys
+

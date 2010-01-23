@@ -1,0 +1,5 @@
+#!/bin/sh
+# use xkmake in $SYSROOT/usr/src/linux instead of make!
+
+exec make ARCH="arm" CROSS_COMPILE="armv7a-softfloat-linux-gnueabi-" INSTALL_MOD_PATH="${ROOT}" "$@"
+
