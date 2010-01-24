@@ -1,0 +1,15 @@
+* Set up command line args
+	-p <path_to_neuvoo_overlay>
+	-d <device>
+	-f <features1:feature2:feature3:...>
+	-c <create overlay links>
+	-s <save to /etc/make.profile.neuvoo/parent>
+
+* Autodetection
+	1. Automatically parse /etc/make.conf for PORTDIR_OVERLAY and check
+	2. Automatically parse /etc/make.conf for layman and check
+	3. Automatically check passed -p and check
+
+* Arrays
+	1. Automatically generate device list
+	2. Automatically generate features list

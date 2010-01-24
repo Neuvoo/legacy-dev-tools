@@ -1,0 +1,192 @@
+#!/bin/bash
+# Neuvoo Profile Tool, http://neuvoo.org
+# Licensed under GPL v1.2
+# created by Jacob "viridior" Galbreath, 01.23.2010
+# Please read the README file for details on how to utilize this script.
+# -p <path_to_neuvoo_overlay>
+pflag=
+found=1
+manual=1
+exit=1
+tmpinput="/tmp/neuvoo-input.tmp.$$"
+NVOVERLAY=""
+NVDEVICE=""
+NV_OVERLAY="/mnt/storage/linux/neuvoo/overlay"
+
+### Capture Passed Arguments
+function getArguments {
+
+	while getopts 'p:' OPTION
+	do
+		case $OPTION in
+		p)	pflag=1
+			pval="$OPTARG"
+			echo $pval
+			;;
+		?)	printf "Usage: %s: [-p path_to_neuvoo_overlay] args\n" $(basename $0) >&2
+			exit 2
+			;;
+		esac
+	done
+	shift $(($OPTIND - 1))
+
+}
+
+
+### Determine Path of Neuvoo Overlay
+function findNeuvoo {
+	msg="Locating Neuvoo Overlay"
+	dialog --infobox "${msg}" 3 $((${#msg} + 4))
+
+	#skip autodetection if manual is true
+	if (($manual))
+	then
+
+		#Check if $NV_OVERLAY env is already defined
+		if [ "${NV_OVERLAY}" ]; then
+			NVOVERLAY="${NV_OVERLAY}"
+			checkNeuvoo
+		fi
+
+		#Check if passed path is correct
+		#if [ "$pflag" ]; then
+		#	NVOVERLAY=$pval
+		#	checkNeuvoo
+		#fi
+
+		#Check if ${ROOT}/etc/make.conf:PORTDIR_OVERLAY or source ...../layman/make.conf is $NVOVERLAY path
+		#if [ -f "${ROOT}/etc/make.conf" ]
+		#
+		#	#check for PORTDIR_OVERLAY
+		#	makestring=`grep PORTDIR_OVERLAY ${ROOT}/etc/make.conf`
+		#	if [ $makestring ]
+		#	then
+		#		checkNeuvoo
+		#	fi
+		#
+		#	#check for layman
+		#	makestring=`grep layman ${ROOT}/etc/make.conf`
+		#	if [ $makestring ]
+		#	then
+		#		checkNeuvoo
+		#	fi
+		#fi
+
+	else
+
+		#Enter User Input Loop
+		while (( $found ))
+		do
+			dialog --textbox
+			echo "Could not find the Neuvoo Overlay!"
+			msg="Enter Absolute Path to Neuvoo Overlay: "
+			size=$((${#msg} + 6))
+			dialog --inputbox "${msg}" 8 "${size}" 2> $tmpinput
+			retval=$?
+			if (($retval))
+			then
+				errorNeuvooOverlay
+			else
+				NVOVERLAY=`cat ${tmpinput}`
+				manual=1
+			fi
+			checkNeuvoo
+		done
+	fi
+}
+
+
+### Verify that the Neuvoo Directory has been found
+function checkNeuvoo {
+	dirpath="${NVOVERLAY}/profiles/neuvoo"
+	if (($((${#dirpath} + 6)) > 30)); then size=$((${#dirpath} + 6)); else size=30; fi
+
+	if [ -d $dirpath ]
+	then
+		msg="Neuvoo Overlay detected!\n\"${dirpath}\""
+		dialog --infobox "${msg}" 4 "${size}" ; sleep 2
+		found=0
+	else
+		msg="Neuvoo Overlay not found!\n\"${dirpath}\""
+		dialog --infobox "${msg}" 4 "${size}" ; sleep 3
+	fi
+}
+
+
+### Did you install the overlay?
+function errorNeuvooOverlay {
+	msg="If you have not imported the overlay, you can get it by;\n\
+	1. Layman Users (Gentoo/Sabayon)\n\
+		a. $ mkdir -p /usr/local/portage\n\
+		b. Add to /etc/make.conf;\n\
+			PORTDIR_OVERLAY=\"/usr/local/portage\"\n\
+		c. $ emerge dev-util/git layman\n\
+		d. $ layman -L\n\
+		e. $ layman -a neuvoo\n\
+		f. At the very end of /etc/make.conf add;\n\
+			source /usr/local/portage/layman/make.conf\n\
+		g. your absolute overlay path is now:\n\
+			/usr/local/portage/layman/neuvoo\n\n\
+	2. non-Layman Users\n\
+		a. Install git for your respective distribution\n\
+		b. $ mkdir -p /usr/local/neuvoo\n\
+		c. $ cd /usr/local/neuvoo\n\
+		d. $ git clone git://gitorious.org/neuvoo/overlay.git\n\
+		e. your absolute overlay path is now:\n\
+			/usr/local/neuvoo/overlay"
+	dialog --backtitle "Couldn't not find Neuvoo Overlay!" --msgbox "${msg}" 18 72
+}
+
+function deviceArray {
+	echo "deviceArray"
+}
+
+function featuresArray {
+	echo "featureArray"
+}
+
+### Welcome Message
+function welcomeNeuvoo {
+	msg="Welcome to the Neuvoo Profile Tool"
+	dialog --msgbox "${msg}" 5 $((${#msg} + 4))
+}
+
+### Leave Messaage
+function leaveNeuvoo {
+	exit 0
+}
+
+### Main Menu
+function menuNeuvoo {
+	while (($exit))
+	do
+		backtitle="Neuvoo Profile Tool"
+		title="Main Menu"
+		dialog --backtitle "${backtitle}" --menu "${title}" 15 60 8 \
+			1 "Path (${NVOVERLAY})" \
+			2 "Device (${NVDEVICE})" \
+			3 Features 2> $tmpinput
+		retval=`cat $tmpinput`
+		case $retval in
+			1) 	NVOVERLAY=""
+			found=1
+			manual=0
+			findNeuvoo
+			;;
+			2) deviceArray
+			;;
+			3) featureArray
+			;;
+			*) exit=0
+			;;
+		esac
+	done
+	
+	leaveNeuvoo
+}
+
+#getArguments
+welcomeNeuvoo
+findNeuvoo
+menuNeuvoo
+exit 0
